@@ -1,0 +1,6 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\Software\wireless forced on]
+"SleepTimer"=dword:00000001
+"Interval"=dword:0000000A
+
