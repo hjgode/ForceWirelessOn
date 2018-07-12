@@ -3,12 +3,13 @@
 
 #include "stdafx.h"
 #include "registry.h"
-#include "log2file.h"
+#include "nclog.h"
 
 #include "itcSSApi.h"
 #pragma comment(lib, "ITCSSApi.lib")
 
 #include "smartsysErrors.h"
+
 
 HANDLE hMutex=NULL;
 #define MY_MUTEX L"ForecWirelessON"
@@ -55,6 +56,7 @@ void regRead(){
 		RegWriteDword(sKeySleepTimer, &iSleepTimer);
 	}
 	DEBUGMSG(1, (L"ForceWirelessOn\n\tinterval=%i\n\tsleeptimer=%i\n", iInterval, iSleepTimer));
+	nclog(L"ForceWirelessOn\n\tinterval=%i\n\tsleeptimer=%i\n", iInterval, iSleepTimer);
 }
 
 /**
@@ -147,6 +149,7 @@ DWORD getBTpower(){
 	else
 	{
 		DEBUGMSG(1, (L"Error retrieving BT Power\n"));
+		nclog(L"Error retrieving BT Power\n");
 	}
 	if(wcsicmp(power, L"on")==0)
 		iRet=1;
@@ -182,6 +185,7 @@ DWORD getWWANpower(){
 	else
 	{
 		DEBUGMSG(1, (L"Error retrieving BT Power\n"));
+		nclog(L"Error retrieving BT Power\n");
 	}
 	if(wcsicmp(power, L"1")==0)
 		iRet=1;
@@ -193,6 +197,7 @@ DWORD getWWANpower(){
 
 DWORD myThread(LPVOID lpParm){
 	DEBUGMSG(1, (L"ForceWirelessOn: thread starting...\n"));
+	nclog(L"ForceWirelessOn: thread starting...\n");
 	BOOL bContinue=TRUE;
 	DWORD dwWait=0;
 	DWORD dwCounter=0;
@@ -202,6 +207,7 @@ DWORD myThread(LPVOID lpParm){
 		switch(dwWait){
 			case WAIT_OBJECT_0:
 				DEBUGMSG(1, (L"ForceWirelessOn: stop event set...\n"));
+				nclog(L"ForceWirelessOn: stop event set...\n");
 				bContinue=FALSE;
 				break;
 			case WAIT_TIMEOUT:
@@ -209,25 +215,40 @@ DWORD myThread(LPVOID lpParm){
 				if(dwCounter>iInterval){
 					//check connections and re-power BT/WWAN if OFF
 					DEBUGMSG(1, (L"ForceWirelessOn: WAIT_TIMEOUT...\n"));
-					if(getBTpower()==1)
+					nclog(L"ForceWirelessOn: WAIT_TIMEOUT...\n");
+					if(getBTpower()==1){
 						DEBUGMSG(1,(L"ForceWirelessOn: BT is on\n"));
+						nclog(L"ForceWirelessOn: BT is on\n");
+					}
 					else{
 						DEBUGMSG(1,(L"ForceWirelessOn: BT is OFF\n"));
+						nclog(L"ForceWirelessOn: BT is OFF\n");
 						_stprintf(szSetXML, xmlBTpowerON);
-						if(setConfigurationData(szSetXML)==0)
+						if(setConfigurationData(szSetXML)==0){
 							DEBUGMSG(1,(L"ForceWirelessOn: setConfigurationData BT OK\n"));
-						else
+							nclog(L"ForceWirelessOn: setConfigurationData BT OK\n");
+						}
+						else{
 							DEBUGMSG(1,(L"ForceWirelessOn: setConfigurationData BT failed\n"));
+							nclog(L"ForceWirelessOn: setConfigurationData BT failed\n");
+						}
 					}
-					if(getWWANpower()==1)
+					if(getWWANpower()==1){
 						DEBUGMSG(1,(L"ForceWirelessOn: WWAN is on\n"));
+						nclog(L"ForceWirelessOn: WWAN is on\n");
+					}
 					else{
 						DEBUGMSG(1,(L"ForceWirelessOn: WWAN is OFF\n"));
+						nclog(L"ForceWirelessOn: WWAN is OFF\n");
 						_stprintf(szSetXML, xmlWWANpowerON);
-						if(setConfigurationData(szSetXML)==0)
+						if(setConfigurationData(szSetXML)==0){
 							DEBUGMSG(1,(L"ForceWirelessOn: setConfigurationData WWAN OK\n"));
-						else
+							nclog(L"ForceWirelessOn: setConfigurationData WWAN OK\n");
+						}
+						else{
 							DEBUGMSG(1,(L"ForceWirelessOn: setConfigurationData WWAN failed\n"));
+							nclog(L"ForceWirelessOn: setConfigurationData WWAN failed\n");
+						}
 					}
 
 					dwCounter=0;
@@ -238,6 +259,7 @@ DWORD myThread(LPVOID lpParm){
 		}
 	}while(bContinue);
 	DEBUGMSG(1, (L"ForceWirelessOn: thread STOPPED\n"));
+	nclog(L"ForceWirelessOn: thread STOPPED\n");
 	free (szSetXML);
 	return 0;
 }
@@ -257,15 +279,18 @@ void waitForAPIs(){
         waitResult = WaitForSingleObject(hWMGREvent, INFINITE);
     Sleep(3000);
 	DEBUGMSG(1, (L"ForceWirelessOn waitForAPIs DONE\n"));
+	nclog(L"ForceWirelessOn waitForAPIs DONE\n");
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	if(argc==1){ //no arg
 		DEBUGMSG(1, (L"ForceWirelessOn starting: no args\n"));
+		nclog(L"ForceWirelessOn starting: no args\n");
 	}
 	else if(argc==2){
 		DEBUGMSG(1, (L"ForceWirelessOn starting: one arg: '%s'\n", argv[1]));
+		nclog(L"ForceWirelessOn starting: one arg: '%s'\n", argv[1]);
 		if(wcsicmp(argv[1], L"stop")==0){
 			hStop=CreateEvent(NULL, FALSE, FALSE, MYSTOPEVENT);
 			SetEvent(hStop);
@@ -275,17 +300,22 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	//##################### dont run if already running #############################
 	DEBUGMSG(1, (L"Checking for Mutex (single instance allowed only)...\n"));
+	nclog(L"Checking for Mutex (single instance allowed only)...\n");
 
 	hMutex=CreateMutex(NULL, TRUE, MY_MUTEX);
 	if(hMutex==NULL){
 		//this should never happen
-		DEBUGMSG(1, (L"Error in CreateMutex! GetLastError()=%i\n", GetLastError()));
+		DWORD dwErr=GetLastError();
+		DEBUGMSG(1, (L"Error in CreateMutex! GetLastError()=%i\n", dwErr));
+		nclog(L"Error in CreateMutex! GetLastError()=%i\n", dwErr);
 		DEBUGMSG(1, (L"-------- END -------\n"));
+		nclog(L"-------- END -------\n");
 		return -99;
 	}
 	DWORD dwLast = GetLastError();
 	if(dwLast== ERROR_ALREADY_EXISTS){//mutex already exists, wait for mutex release
 		DEBUGMSG(1, (L"\tAttached to existing mutex\n"));
+		nclog(L"\tAttached to existing mutex\n");
 		//DEBUGMSG(1, (L"................ Waiting for mutex release......\n"));
 		//WaitForSingleObject( hMutex, INFINITE );
 		//DEBUGMSG(1, (L"++++++++++++++++ Mutex released. +++++++++++++++\n"));
@@ -293,6 +323,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	else{
 		DEBUGMSG(1, (L"\tCreated new mutex\n"));
+		nclog(L"\tCreated new mutex\n");
 	}
 	//##################### dont run if already running #############################
 
@@ -301,8 +332,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	regRead();
 
 	hStop=CreateEvent(NULL, TRUE, FALSE, MYSTOPEVENT);
-	if(hStop==NULL)
+	if(hStop==NULL){
 		DEBUGMSG(1,(L"CreateEvent for StopThread failed: 0x%08x\n", GetLastError()));
+		nclog(L"CreateEvent for StopThread failed: 0x%08x\n", GetLastError());
+	}
 	hThread=CreateThread(NULL, 0, myThread, NULL, 0, &threadID);
 
 	BOOL bStop=FALSE;
@@ -320,6 +353,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}while(!bStop);
 	ResetEvent(hStop);
+	nclog(L"ForceWirelessOn ENDED");
 	return 0;
 }
 

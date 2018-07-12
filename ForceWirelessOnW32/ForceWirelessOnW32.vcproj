@@ -208,6 +208,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\nclog.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -235,6 +239,10 @@
 			>
 			<File
 				RelativePath=".\log2file.h"
+				>
+			</File>
+			<File
+				RelativePath=".\nclog.h"
 				>
 			</File>
 			<File
