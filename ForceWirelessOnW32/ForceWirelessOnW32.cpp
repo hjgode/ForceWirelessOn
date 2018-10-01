@@ -42,6 +42,36 @@ _T("<Subsystem Name=\"Bluetooth\">\r\n \
 		<Field Name=\"Power\">On</Field>\r\n \
    </Subsystem>\r\n");
 
+TCHAR* dwModesStr[]={L"BTH_POWER_OFF", L"BTH_CONNECTABLE", L"BTH_DISCOVERABLE"};
+
+DWORD getBTMode(){
+	nclog(L"getBTMode...\n");
+	DWORD dwMode=BTH_POWER_OFF;
+	int iRes=BthGetMode(&dwMode);
+	if(iRes==ERROR_SUCCESS){
+		nclog(L"BthGetMode=OK : %s\n", dwModesStr[dwMode]);
+		return dwMode;
+	}
+	else{
+		nclog(L"BthGetMode iRes=%i : LastError=%i\n", iRes, GetLastError());
+		return -1;
+	}
+}
+
+int setBTMode(DWORD dwMode){
+	nclog(L"setBTMode %s...\n", dwModesStr[dwMode]);
+	int iRes=0;
+	iRes=BthSetMode(dwMode);
+	if(iRes==ERROR_SUCCESS){
+		nclog(L"BthSetMode=OK for %s\n", dwModesStr[dwMode]);
+	}
+	else{
+		nclog(L"BthSetMode=failed for %s, iRes=%i, LastError=%i\n", dwModesStr[dwMode], iRes, GetLastError());
+		iRes=-1;
+	}
+	return iRes;
+}
+
 void regRead(){
 	OpenCreateKey(sSubkey);
 	DWORD dwVal=0;
@@ -233,6 +263,15 @@ DWORD myThread(LPVOID lpParm){
 							nclog(L"ForceWirelessOn: setConfigurationData BT failed\n");
 						}
 					}
+					//do the same with MS BT API
+					if(getBTMode()==BTH_DISCOVERABLE || getBTMode()==BTH_CONNECTABLE){
+						nclog(L"ForceWirelessOn: MS BT is on\n");
+					}else{
+						nclog(L"ForceWirelessOn: MS BT is OFF\n");
+						setBTMode(BTH_CONNECTABLE);
+					}
+
+					//### WWAN...
 					if(getWWANpower()==1){
 						DEBUGMSG(1,(L"ForceWirelessOn: WWAN is on\n"));
 						nclog(L"ForceWirelessOn: WWAN is on\n");

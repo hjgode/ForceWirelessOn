@@ -55,3 +55,5 @@
 
 // TODO: reference additional headers your program requires here
 
+#include <bthutil.h>
+#pragma comment (lib , "bthutil.lib")
